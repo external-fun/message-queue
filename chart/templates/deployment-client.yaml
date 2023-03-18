@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-mq-client"
+spec:
+  selector:
+    matchLabels:
+      app: mq-client
+  template:
+    metadata:
+      labels:
+        app: mq-client
+    spec:
+      imagePullSecrets:
+        - name: "{{ .Values.mqClient.imagePullsecret }}"
+      containers:
+        - name: mq-client
+          env:
+            - name: RABBIT_MQ_URL
+              value: "amqp://${MQ_USER}:${MQ_PASSWORD}@{{.Release.Name}}-rabbitmq:5672/"
+            - name: MQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: mq-password
+                  name: "{{ .Release.Name }}-secret"
+            - name: MQ_USER
+              valueFrom:
+                secretKeyRef:
+                  key: mq-user
+                  name: "{{ .Release.Name }}-secret"
+            - name: QUEUE_NAME
+              value: hello
+            - name: SERVER_URL
+              value: mq-server-svc:8081
+          image: {{ .Values.mqClient.image }}
+          imagePullPolicy: "Always"
+          {{- if .Values.mqClient.resources }}
+          resources:
+          {{- .Values.mqClient.resources | toYaml | nindent 12 }}
+          {{- else }}
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "10m"
+          {{- end }}
+          ports:
+            - containerPort: 7070

@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name}}-mq-server"
+spec:
+  selector:
+    matchLabels:
+      app: mq-server
+  template:
+    metadata:
+      labels:
+        app: mq-server
+    spec:
+      imagePullSecrets:
+        - name: "{{ .Values.mqServer.imagePullsecret }}"
+      containers:
+        - name: mq-server
+          env:
+            - name: RABBIT_MQ_URL
+              value: "amqp://${MQ_USER}:${MQ_PASSWORD}@{{.Release.Name}}-rabbitmq:5672/"
+            - name: QUEUE_NAME
+              value: hello
+            - name: DB_USER
+              value: lispberry
+            - name: MQ_USER
+              valueFrom:
+                secretKeyRef:
+                  key: mq-user
+                  name: "{{ .Release.Name }}-secret"
+            - name: MQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: mq-password
+                  name: "{{ .Release.Name }}-secret"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: postgres-password
+                  name: "{{ .Release.Name }}-secret"
+          image: {{ .Values.mqServer.image }}
+          imagePullPolicy: "Always"
+          {{- if .Values.mqServer.resources }}
+          resources:
+          {{- .Values.mqServer.resources | toYaml | nindent 12 }}
+          {{- else }}
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "10m"
+          {{- end }}
+          ports:
+            - name: msqp1
+              containerPort: 8080
+            - name: msqp2
+              containerPort: 8081

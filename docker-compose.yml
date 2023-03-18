@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  client:
+    environment:
+      - RABBIT_MQ_URL=amqp://worker:worker@rabbitmq:5672/
+      - QUEUE_NAME=hello
+      - SERVER_URL=server:8081
+    build: ./client
+    depends_on:
+      - rabbitmq
+      - server
+    volumes:
+      - ./cert/:/cert/
+    deploy:
+      replicas: 1
+    ports:
+      - "7070:7070"
+  server:
+    environment:
+      - RABBIT_MQ_URL=amqp://worker:worker@rabbitmq:5672/
+      - QUEUE_NAME=hello
+      - DB_PASSWORD=(lispberry)
+      - DB_USER=lispberry
+      - DB_HOST=db
+    build: ./server
+    depends_on:
+      - rabbitmq
+      - db
+    volumes:
+      - ./cert/:/cert/
+    deploy:
+      replicas: 1
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+  rabbitmq:
+    image: rabbitmq:latest
+    deploy:
+      replicas: 1    
+    environment:
+      - RABBITMQ_DEFAULT_USER=worker
+      - RABBITMQ_DEFAULT_PASS=worker
+  db:
+    deploy:
+      replicas: 1
+    environment:
+      - POSTGRES_PASSWORD=(lispberry)
+      - POSTGRES_USER=lispberry
+    build: ./db

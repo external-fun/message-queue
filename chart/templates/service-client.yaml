@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mq-client-svc
+spec:
+  selector:
+    app: mq-client
+  ports:
+    - port: 7070
+      targetPort: 7070
+      name: mq-client-port
